@@ -1,5 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <openssl/rsa.h>
+#include <openssl/sha.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/evp.h>
@@ -12,7 +15,7 @@
 * @param ppDecryptData: 加密后数据
 * @return -1: 失败, 其他: 加密数据长度
 **/
-int xhcs::TripleDESEncrypt(const char* pData, int ilen, char** ppEncodeData)
+int TripleDESEncrypt(const char* pData, int ilen, char** ppEncodeData)
 {
     /*密钥*/
     unsigned char key[24] = {43,14,54,109,109,8,84,87,116,30,19,68,35,51,83,72,16,2,83,48,117,85,9,80};
@@ -30,7 +33,7 @@ int xhcs::TripleDESEncrypt(const char* pData, int ilen, char** ppEncodeData)
 
     /*对齐方式*/
     int datalen = (ilen%8) == 0 ? (ilen + 8) : ((8 - ilen%8) + ilen);
-    *ppEncodeData = new char[datalen];
+    *ppEncodeData = (char*)malloc(datalen);
     memset(*ppEncodeData, 0, datalen);
 
     int outlen = 0;
@@ -38,7 +41,7 @@ int xhcs::TripleDESEncrypt(const char* pData, int ilen, char** ppEncodeData)
     if(rc != 1)
     {
         EVP_CIPHER_CTX_cleanup(&ctx);
-        delete[] *ppEncodeData;
+        free(*ppEncodeData);
         return -1;
     }
     int outlentmp = 0;
@@ -46,7 +49,7 @@ int xhcs::TripleDESEncrypt(const char* pData, int ilen, char** ppEncodeData)
     if(rc != 1)
     {
         EVP_CIPHER_CTX_cleanup(&ctx);
-        delete[] *ppEncodeData;
+        free(*ppEncodeData);
         return -1;
     }
     outlen += outlentmp;
@@ -78,14 +81,14 @@ int TripleDESDecrypt(const char* pData, int ilen, char** ppDecryptData)
     }
 
     int outlen = ilen + 1;
-    *ppDecryptData = new char[outlen];
+    *ppDecryptData = (char*)malloc(outlen);
     memset(*ppDecryptData, 0 , outlen);
 
     rc = EVP_DecryptUpdate(&ctx, (unsigned char*)(*ppDecryptData), &outlen, (unsigned char*)pData, ilen);
     if(rc != 1)
     {
         EVP_CIPHER_CTX_cleanup(&ctx);
-        delete[] *ppDecryptData;
+        free(*ppDecryptData);
         return -1;
     }
     int outlentmp = 0;
@@ -93,7 +96,7 @@ int TripleDESDecrypt(const char* pData, int ilen, char** ppDecryptData)
     if(rc != 1)
     {
         EVP_CIPHER_CTX_cleanup(&ctx);
-        delete[] *ppDecryptData;
+        free(*ppDecryptData);
         return -1;
     }
     outlen += outlentmp;
@@ -108,7 +111,7 @@ int TripleDESDecrypt(const char* pData, int ilen, char** ppDecryptData)
 * @param pEncodeData: 加密后数据
 * @return -1: 失败, 其他: 加密数据长度
 **/
-int xhcs::RSAEncrypt(const char* pData , int iLen, char** pEncodeData)
+int RSAEncrypt(const char* pData , int iLen, char** pEncodeData)
 {
     char chPublicKey[] = "-----BEGIN PUBLIC KEY-----\n"
                          "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCb/vAGucNg3OJyBV6/aWEd7IK9"
@@ -129,9 +132,8 @@ int xhcs::RSAEncrypt(const char* pData , int iLen, char** pEncodeData)
         return -1;
     }
     int nLen = RSA_size(rsa);
-    char* pEncode = new char[nLen + 1];
+    char* pEncode = (char*)malloc(nLen + 1);
     int rc = RSA_public_encrypt(iLen, (const unsigned char*)pData, (unsigned char*)pEncode, rsa, RSA_PKCS1_PADDING);
-    HCSDK_ERROR_LOG("RSA_public_encrypt rc: %d, string: %s", rc, pEncode);
     *pEncodeData = pEncode;
     RSA_free(rsa);
     CRYPTO_cleanup_all_ex_data();
@@ -145,7 +147,7 @@ int xhcs::RSAEncrypt(const char* pData , int iLen, char** pEncodeData)
 * @param pEncodeData: 加密后数据
 * @return -1: 失败, 其他: 加密数据长度
 **/
-int xhcs::RSADecrypt(const char* pData , int iLen, char** pDecodeData)
+int RSADecrypt(const char* pData , int iLen, char** pDecodeData)
 {
     char chPrivateKey[] = "-----BEGIN RSA PRIVATE KEY-----\n"
                           "MIICXQIBAAKBgQCb/vAGucNg3OJyBV6/aWEd7IK946GYnOT089mDzNY2zDBB9hPW\n"
@@ -174,7 +176,7 @@ int xhcs::RSADecrypt(const char* pData , int iLen, char** pDecodeData)
     }
 
     int nLen = RSA_size(rsa);
-    char* pDecode = new char[nLen + 1];
+    char* pDecode = (char*)malloc(nLen + 1);
     memset(pDecode, 0, nLen+1);
     int rc = RSA_private_decrypt(nLen ,(unsigned char *)pData,(unsigned char*)pDecode,rsa,RSA_PKCS1_PADDING);
     *pDecodeData = pDecode;
@@ -182,3 +184,4 @@ int xhcs::RSADecrypt(const char* pData , int iLen, char** pDecodeData)
     CRYPTO_cleanup_all_ex_data();
     return rc;
 }
+
