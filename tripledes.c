@@ -5,6 +5,13 @@
 #include <openssl/evp.h>
 #include <openssl/x509.h>
 
+/**
+* 功能描述:3DES加密
+* @param pData：原始数据
+* @param ilen: 原始数据长度
+* @param ppDecryptData: 加密后数据
+* @return -1: 失败, 其他: 加密数据长度
+**/
 int TripleDESDecrypt(const char* pData, int ilen, char** ppDecryptData)
 {
     /*密钥*/
@@ -24,7 +31,7 @@ int TripleDESDecrypt(const char* pData, int ilen, char** ppDecryptData)
     int outlen = ilen + 1;
     *ppDecryptData = new char[outlen];
     memset(*ppDecryptData, 0 , outlen);
-
+    
     rc = EVP_DecryptUpdate(&ctx, (unsigned char*)(*ppDecryptData), &outlen, (unsigned char*)pData, ilen);
     if(rc != 1)
     {
@@ -47,7 +54,13 @@ int TripleDESDecrypt(const char* pData, int ilen, char** ppDecryptData)
     return outlen;
 }
 
-/*3DES解密*/
+/**
+* 功能描述:3DES解密
+* @param pData：原始数据
+* @param ilen: 原始数据长度
+* @param ppDecryptData: 解密后数据
+* @return -1: 失败, 其他: 解密数据长度
+**/
 int TripleDESDecrypt(const char* pData, int ilen, char** ppDecryptData)
 {
     /*密钥*/
